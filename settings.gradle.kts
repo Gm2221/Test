@@ -4,7 +4,7 @@
 
 rootProject.name = "JumpIfZero public externals"
 
-include(":template")
+include(":shiftwalker")
 
 for (project in rootProject.children) {
     project.apply {
