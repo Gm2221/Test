@@ -12,7 +12,7 @@ plugins {
     id("com.simonharrer.modernizer") version "2.1.0-1" apply false
 }
 
-project.extra["GithubUrl"] = "https://github.com/JumpIfZero/plugins-public"
+project.extra["GithubUrl"] = "https://github.com/JumpIfZero/plugins"
 
 apply<BootstrapPlugin>()
 apply<VersionPlugin>()

@@ -4,8 +4,9 @@
 
 version = "0.0.1"
 
-project.extra["PluginName"] = ""
+project.extra["PluginName"] = "template"
 project.extra["PluginDescription"] = ""
+project.extra["ProjectSupportUrl"] = "https://github.com/JumpIfZero"
 
 tasks {
     jar {
