@@ -5,6 +5,8 @@
 rootProject.name = "JumpIfZero public externals"
 
 include(":shiftwalker")
+include(":socketshootingstars")
+include(":socketprivate")
 
 for (project in rootProject.children) {
     project.apply {
