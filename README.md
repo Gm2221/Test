@@ -1,2 +1,2 @@
-# JumpIfZero private externals
+# JumpIfZero public externals
 https://discord.gg/9Txtv7hzSn
