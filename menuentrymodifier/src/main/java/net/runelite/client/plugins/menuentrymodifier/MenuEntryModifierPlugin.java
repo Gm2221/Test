@@ -23,7 +23,9 @@ import javax.inject.Inject;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Extension
 @PluginDescriptor(
@@ -49,8 +51,7 @@ public class MenuEntryModifierPlugin extends Plugin
     private MenuEntryModifierConfig config;
 
     private boolean active;
-    private final ArrayList<String> targets = new ArrayList<>();
-    private final ArrayList<String> options = new ArrayList<>();
+    private final Map<String, String> filterEntries = new HashMap<>();
     private final ArrayList<String> removed = new ArrayList<>();
 
     public enum filterOption {
@@ -98,9 +99,8 @@ public class MenuEntryModifierPlugin extends Plugin
     protected void shutDown()
     {
         active = false;
-        targets.clear();
-        options.clear();
         removed.clear();
+        filterEntries.clear();
 
         if (config.hotkeyRequired())
             keyManager.unregisterKeyListener(hotkeyListener);
@@ -153,12 +153,12 @@ public class MenuEntryModifierPlugin extends Plugin
             {
                 MenuEntry entry = entries
                         .stream()
-                        .filter(e -> targets
+                        .filter(e -> filterEntries
+                                .entrySet()
                                 .stream()
-                                .anyMatch(sanitizeEntry(e.getTarget())::contains))
-                        .filter(e -> options
-                                .stream()
-                                .anyMatch(sanitizeEntry(e.getOption())::contains))
+                                .anyMatch(p ->
+                                        sanitizeEntry(e.getTarget()).contains(p.getKey()) &&
+                                        sanitizeEntry(e.getOption()).contains(p.getValue())))
                         .findFirst()
                         .orElse(null);
 
@@ -173,7 +173,8 @@ public class MenuEntryModifierPlugin extends Plugin
 
                 MenuEntry entry = entries
                         .stream()
-                        .filter(e -> options
+                        .filter(e -> filterEntries
+                                .values()
                                 .stream()
                                 .anyMatch(sanitizeEntry(e.getOption())::contains))
                         .findFirst()
@@ -189,7 +190,8 @@ public class MenuEntryModifierPlugin extends Plugin
             {
                 MenuEntry entry = entries
                         .stream()
-                        .filter(e -> targets
+                        .filter(e -> filterEntries
+                                .keySet()
                                 .stream()
                                 .anyMatch(sanitizeEntry(e.getTarget())::contains))
                         .findFirst()
@@ -236,15 +238,12 @@ public class MenuEntryModifierPlugin extends Plugin
     private void loadPriorityEntries()
     {
         String[] lines = config.priorityList().split("\\r?\\n");
-
-        targets.clear();
-        options.clear();
+        filterEntries.clear();
 
         for (String line : lines)
         {
             String[] priority = line.split(",");
-            targets.add(priority[0].toLowerCase());
-            options.add(priority[1].toLowerCase());
+            filterEntries.put(priority[0].toLowerCase(), priority[1].toLowerCase());
         }
     }
 
@@ -252,6 +251,9 @@ public class MenuEntryModifierPlugin extends Plugin
     {
         String[] lines = config.removeList().split("\\r?\\n");
         removed.clear();
+
+        if (lines.length == 1 && lines[0].isBlank())
+            return;
 
         for (String line : lines)
             removed.add(line.toLowerCase());
