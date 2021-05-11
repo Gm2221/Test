@@ -3,6 +3,8 @@
  */
 package net.runelite.client.plugins.menuentrymodifier;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -23,9 +25,7 @@ import javax.inject.Inject;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Extension
 @PluginDescriptor(
@@ -51,7 +51,7 @@ public class MenuEntryModifierPlugin extends Plugin
     private MenuEntryModifierConfig config;
 
     private boolean active;
-    private final Map<String, String> filterEntries = new HashMap<>();
+    private final Multimap<String, String> filterEntries = ArrayListMultimap.create();
     private final ArrayList<String> removed = new ArrayList<>();
 
     public enum filterOption {
@@ -154,7 +154,7 @@ public class MenuEntryModifierPlugin extends Plugin
                 MenuEntry entry = entries
                         .stream()
                         .filter(e -> filterEntries
-                                .entrySet()
+                                .entries()
                                 .stream()
                                 .anyMatch(p ->
                                         sanitizeEntry(e.getTarget()).contains(p.getKey()) &&
@@ -170,7 +170,6 @@ public class MenuEntryModifierPlugin extends Plugin
             }
             else if (config.menuFilter() == filterOption.OPTION)
             {
-
                 MenuEntry entry = entries
                         .stream()
                         .filter(e -> filterEntries
@@ -230,9 +229,10 @@ public class MenuEntryModifierPlugin extends Plugin
     private void setPriorityEntry(MenuEntry entry)
     {
         MenuEntry[] entries = new MenuEntry[1];
+        entry.setForceLeftClick(true);
+
         entries[0] = entry;
         client.setMenuEntries(entries);
-        client.setLeftClickMenuEntry(entries[0]);
     }
 
     private void loadPriorityEntries()
