@@ -8,6 +8,7 @@ include(":shiftwalker")
 include(":socketshootingstars")
 include(":socketprivate")
 include(":menuentrymodifier")
+include("attackrange")
 
 for (project in rootProject.children) {
     project.apply {
