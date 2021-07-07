@@ -52,6 +52,7 @@ public class MenuEntryModifierPlugin extends Plugin
 
     private boolean active;
     private final Multimap<String, String> filterEntries = ArrayListMultimap.create();
+    private final Multimap<String, String> hotkeyEntries = ArrayListMultimap.create();
     private final ArrayList<String> removed = new ArrayList<>();
 
     public enum filterOption {
@@ -90,9 +91,9 @@ public class MenuEntryModifierPlugin extends Plugin
         active = false;
         loadPriorityEntries();
         loadRemovedEntries();
+        loadHotkeyEntries();
 
-        if (config.hotkeyRequired())
-            keyManager.registerKeyListener(hotkeyListener);
+        keyManager.registerKeyListener(hotkeyListener);
     }
 
     @Override
@@ -101,9 +102,9 @@ public class MenuEntryModifierPlugin extends Plugin
         active = false;
         removed.clear();
         filterEntries.clear();
+        hotkeyEntries.clear();
 
-        if (config.hotkeyRequired())
-            keyManager.unregisterKeyListener(hotkeyListener);
+        keyManager.unregisterKeyListener(hotkeyListener);
     }
 
     @Subscribe
@@ -111,20 +112,12 @@ public class MenuEntryModifierPlugin extends Plugin
     {
         if (event.getGroup().equals("menuentrymodifier"))
         {
-            if (event.getKey().equals("hotkeyRequired"))
-            {
-                if (config.hotkeyRequired())
-                    keyManager.registerKeyListener(hotkeyListener);
-                else
-                    keyManager.unregisterKeyListener(hotkeyListener);
-            }
-            else if (event.getKey().equals("hotkeyButton"))
-            {
+            if (event.getKey().equals("hotkeyButton"))
                 active = false;
-            }
 
             loadPriorityEntries();
             loadRemovedEntries();
+            loadHotkeyEntries();
         }
     }
 
@@ -138,73 +131,72 @@ public class MenuEntryModifierPlugin extends Plugin
     @Subscribe
     public void onMenuEntryAdded(MenuEntryAdded event)
     {
-        if (config.menuFilter() == filterOption.NONE && !config.removeEnabled())
+        if (config.menuFilter() == filterOption.NONE &&
+            config.hotkeyFilter() == filterOption.NONE &&
+            !config.removeEnabled())
             return;
 
-        if ((active && config.hotkeyRequired()) || !config.hotkeyRequired())
+        ArrayList<MenuEntry> entries = new ArrayList<>();
+        Collections.addAll(entries, client.getMenuEntries());
+
+        if (config.removeEnabled())
+            entries.removeIf(e -> removed.stream().anyMatch(sanitizeEntry(e.getOption())::contains));
+
+        if ((active ? config.hotkeyFilter() : config.menuFilter()) == filterOption.BOTH)
         {
-            ArrayList<MenuEntry> entries = new ArrayList<>();
-            Collections.addAll(entries, client.getMenuEntries());
+            MenuEntry entry = entries
+                    .stream()
+                    .filter(e -> (active ? hotkeyEntries : filterEntries)
+                            .entries()
+                            .stream()
+                            .anyMatch(p ->
+                                    sanitizeEntry(e.getTarget()).contains(p.getKey()) &&
+                                    sanitizeEntry(e.getOption()).contains(p.getValue())))
+                    .findFirst()
+                    .orElse(null);
 
-            if (config.removeEnabled())
-                entries.removeIf(e -> removed.stream().anyMatch(sanitizeEntry(e.getOption())::contains));
-
-            if (config.menuFilter() == filterOption.BOTH)
+            if (entry != null)
             {
-                MenuEntry entry = entries
-                        .stream()
-                        .filter(e -> filterEntries
-                                .entries()
-                                .stream()
-                                .anyMatch(p ->
-                                        sanitizeEntry(e.getTarget()).contains(p.getKey()) &&
-                                        sanitizeEntry(e.getOption()).contains(p.getValue())))
-                        .findFirst()
-                        .orElse(null);
-
-                if (entry != null)
-                {
-                    setPriorityEntry(entry);
-                    return;
-                }
+                setPriorityEntry(entry);
+                return;
             }
-            else if (config.menuFilter() == filterOption.OPTION)
-            {
-                MenuEntry entry = entries
-                        .stream()
-                        .filter(e -> filterEntries
-                                .values()
-                                .stream()
-                                .anyMatch(sanitizeEntry(e.getOption())::contains))
-                        .findFirst()
-                        .orElse(null);
-
-                if (entry != null)
-                {
-                    setPriorityEntry(entry);
-                    return;
-                }
-            }
-            else if (config.menuFilter() == filterOption.TARGET)
-            {
-                MenuEntry entry = entries
-                        .stream()
-                        .filter(e -> filterEntries
-                                .keySet()
-                                .stream()
-                                .anyMatch(sanitizeEntry(e.getTarget())::contains))
-                        .findFirst()
-                        .orElse(null);
-
-                if (entry != null)
-                {
-                    setPriorityEntry(entry);
-                    return;
-                }
-            }
-
-            reconstructMenuEntries(entries);
         }
+        else if ((active ? config.hotkeyFilter() : config.menuFilter()) == filterOption.OPTION)
+        {
+            MenuEntry entry = entries
+                    .stream()
+                    .filter(e -> (active ? hotkeyEntries : filterEntries)
+                            .values()
+                            .stream()
+                            .anyMatch(sanitizeEntry(e.getOption())::contains))
+                    .findFirst()
+                    .orElse(null);
+
+            if (entry != null)
+            {
+                setPriorityEntry(entry);
+                return;
+            }
+        }
+        else if ((active ? config.hotkeyFilter() : config.menuFilter()) == filterOption.TARGET)
+        {
+            MenuEntry entry = entries
+                    .stream()
+                    .filter(e -> (active ? hotkeyEntries : filterEntries)
+                            .keySet()
+                            .stream()
+                            .anyMatch(sanitizeEntry(e.getTarget())::contains))
+                    .findFirst()
+                    .orElse(null);
+
+            if (entry != null)
+            {
+                setPriorityEntry(entry);
+                return;
+            }
+        }
+
+        reconstructMenuEntries(entries);
     }
 
     private String sanitizeEntry(String text)
@@ -244,6 +236,18 @@ public class MenuEntryModifierPlugin extends Plugin
         {
             String[] priority = line.split(",");
             filterEntries.put(priority[0].toLowerCase(), priority[1].toLowerCase());
+        }
+    }
+
+    private void loadHotkeyEntries()
+    {
+        String[] lines = config.hotkeyList().split("\\r?\\n");
+        hotkeyEntries.clear();
+
+        for (String line : lines)
+        {
+            String[] priority = line.split(",");
+            hotkeyEntries.put(priority[0].toLowerCase(), priority[1].toLowerCase());
         }
     }
 
