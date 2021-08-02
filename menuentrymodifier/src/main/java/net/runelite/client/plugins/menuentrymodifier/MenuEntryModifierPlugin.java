@@ -51,6 +51,7 @@ public class MenuEntryModifierPlugin extends Plugin
     private MenuEntryModifierConfig config;
 
     private boolean active;
+    private MenuEntry cancel;
     private final Multimap<String, String> filterEntries = ArrayListMultimap.create();
     private final Multimap<String, String> hotkeyEntries = ArrayListMultimap.create();
     private final ArrayList<String> removed = new ArrayList<>();
@@ -138,9 +139,19 @@ public class MenuEntryModifierPlugin extends Plugin
 
         ArrayList<MenuEntry> entries = new ArrayList<>();
         Collections.addAll(entries, client.getMenuEntries());
+        Collections.reverse(entries);
 
         if (config.removeEnabled())
             entries.removeIf(e -> removed.stream().anyMatch(sanitizeEntry(e.getOption())::contains));
+
+        MenuEntry newCancel = entries
+                .stream()
+                .filter(e -> e.getOption().equals("Cancel"))
+                .findFirst()
+                .orElse(null);
+
+        if (newCancel != null && newCancel != cancel)
+            cancel = newCancel;
 
         if ((active ? config.hotkeyFilter() : config.menuFilter()) == filterOption.BOTH)
         {
@@ -196,7 +207,11 @@ public class MenuEntryModifierPlugin extends Plugin
             }
         }
 
-        reconstructMenuEntries(entries);
+        if (config.removeEnabled())
+        {
+            Collections.reverse(entries);
+            reconstructMenuEntries(entries);
+        }
     }
 
     private String sanitizeEntry(String text)
@@ -218,12 +233,13 @@ public class MenuEntryModifierPlugin extends Plugin
         client.setMenuEntries(entries);
     }
 
-    private void setPriorityEntry(MenuEntry entry)
+    private void setPriorityEntry(MenuEntry priority)
     {
-        MenuEntry[] entries = new MenuEntry[1];
-        entry.setForceLeftClick(true);
+        MenuEntry[] entries = new MenuEntry[2];
+        priority.setForceLeftClick(true);
 
-        entries[0] = entry;
+        entries[1] = priority;
+        entries[0] = cancel;
         client.setMenuEntries(entries);
     }
 
