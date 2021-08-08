@@ -2,7 +2,7 @@
  * Copyright (c) 2021 JumpIfZero <https://github.com/JumpIfZero>
  */
 
-version = "1.2.0"
+version = "1.3.0"
 
 project.extra["PluginName"] = "Menu Entry Modifier"
 project.extra["PluginDescription"] = "Fully customizable menu entries"

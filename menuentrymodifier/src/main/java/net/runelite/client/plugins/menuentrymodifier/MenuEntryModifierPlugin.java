@@ -216,7 +216,7 @@ public class MenuEntryModifierPlugin extends Plugin
 
     private String sanitizeEntry(String text)
     {
-        return Text.removeTags(text.toLowerCase());
+        return Text.removeTags(Text.standardize(text.toLowerCase()));
     }
 
     private void reconstructMenuEntries(List<MenuEntry> reconstruct)
