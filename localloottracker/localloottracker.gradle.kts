@@ -1,7 +1,7 @@
 /* 
  * Copyright (c) 2021 JumpIfZero <https://github.com/JumpIfZero>
  */
-version = "1.1.0"
+version = "1.2.0"
 
 project.extra["PluginName"] = "Loot Tracker (local)"
 project.extra["PluginDescription"] = "Local data storage extension to loot tracker plugin"
